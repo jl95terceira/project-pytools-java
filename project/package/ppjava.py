@@ -1,7 +1,10 @@
 import re
 import typing
 
-import pp
+if __name__ == '__main__': # business as usual
+    import jl95terceira.pytools.pp as pp
+else: # running in unittest or other
+    from . import pp 
 
 REGEX         = 'PPJAVA'
 SAFE_REGEX    = f'{REGEX}98006097C52D49A0961609C7E687AF2B'
@@ -14,22 +17,20 @@ class CAPTURE:
 
     CODE = 'code'
 
-def do_it(fn:str):
+class Processor(pp.Processor):
 
-    pp.do_it(fn       =fn,
-             instructs=[pp.ProcessingInstruction(abort_if=lambda fcontent,_a=abort_if_match_safe_rex: ((lambda m: m) if _a else (lambda m: not m))(re.match(pattern=f'.*{SAFE_REGEX}.*',string=fcontent)),
+    @typing.override
+    def __init__(self):
+
+        super().__init__(pis=[pp.ProcessingInstruction(abort_if=lambda fcontent,_a=abort_if_match_safe_rex: ((lambda m: m) if _a else (lambda m: not m))(re.match(pattern=f'.*{SAFE_REGEX}.*',string=fcontent)),
                                                  pattern =f'{re.escape(COMMENT_BEGIN)} *{BODY(rex)}(?P<{CAPTURE.CODE}>.*?){re.escape(COMMENT_END)}.*?{re.escape(COMMENT_BEGIN)} *{TAIL(rex)} *{re.escape(COMMENT_END)}',
                                                  capture =lambda match                              : match.group(CAPTURE.CODE),
                                                  descape =lambda input                              : input.replace(COMMENT_END[:-1]+'\\'+COMMENT_END[-1], COMMENT_END),
                                                  repl    =lambda output,match,rex=rex               : f'{COMMENT_BEGIN} {BODY(rex)}{match.group(CAPTURE.CODE)}{COMMENT_END}\n{output}\n{COMMENT_BEGIN} {TAIL(rex)} {COMMENT_END}') for abort_if_match_safe_rex,rex in [(True,  REGEX), 
                                                                                                                                                                                                                                                                      (False, SAFE_REGEX)]])
     
-if __name__ == '__main__':
+def main():
 
-    import argparse
+    pp.main_simple(Processor(), 'JAVA')
 
-    p = argparse.ArgumentParser(description='pre-processor for Java source files')
-    p.add_argument('f',
-                   help='file name')
-    args = p.parse_args()
-    do_it(fn=args.f)
+if __name__ == '__main__': main()
